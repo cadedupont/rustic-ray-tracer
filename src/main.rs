@@ -2,29 +2,40 @@
 // Date: 29 January 2024
 // Description: Main file for ray tracer project
 
-fn main() {
-    // Declare image width and height
-    let width: i32 = 256;
-    let height: i32 = 256;
+use indicatif::ProgressIterator;
+use itertools::Itertools;
+use std::{fs, io};
 
-    // Print header for PPM image
-    println!("P3\n{} {}\n255\n", width, height);
+const WIDTH: u32 = 256;
+const HEIGHT: u32 = 256;
+const MAX_COLOR: u32 = 255;
 
-    // Loop through each pixel and print color
-    for j in (0..height).rev() {
-        for i in 0..width {
-            // Calculate color for each pixel from 0.0 to 1.0
-            let r: f32 = (i as f32) / ((width - 1) as f32);
-            let g: f32 = (j as f32) / ((height - 1) as f32);
-            let b: f32 = 0.25;
+fn main() -> io::Result<()> {
+    // Map each each pixel to a color, join the pixels' color values into a single string
+    let pixels = (0..HEIGHT)
+        .cartesian_product(0..WIDTH)
+        .progress_count(HEIGHT as u64 * WIDTH as u64)
+        .map(|(y, x)| {
+            let r = x as f64 / (WIDTH - 1) as f64;
+            let g = y as f64 / (HEIGHT - 1) as f64;
+            let b = 0.25;
 
-            // Convert color to 0-255 range for printing to PPM image
-            let ir: i32 = (255.999 * r) as i32;
-            let ig: i32 = (255.999 * g) as i32;
-            let ib: i32 = (255.999 * b) as i32;
+            format!(
+                "{} {} {}\n",
+                (MAX_COLOR as f64 * r) as u32,
+                (MAX_COLOR as f64 * g) as u32,
+                (MAX_COLOR as f64 * b) as u32
+            )
+        })
+        .collect::<Vec<String>>()
+        .join("");
 
-            // Print color to PPM image
-            println!("{} {} {}", ir, ig, ib);
-        }
-    }
+    // Write the pixels to a PPM file
+    fs::write(
+        "image.ppm",
+        format!(
+            "P3\n{} {}\n{}\n{}",
+            WIDTH, HEIGHT, MAX_COLOR, pixels
+        )
+    )
 }
